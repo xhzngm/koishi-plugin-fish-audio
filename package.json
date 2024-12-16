@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-fish-audio",
   "description": "Text-to-speech via Fish Audio API",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -25,10 +25,11 @@
     "say"
   ],
   "peerDependencies": {
-    "koishi": "^4.17.7"
+    "koishi": "^4.17.9"
   },
   "devDependencies": {
-    "@initencounter/vits": "^0.0.3"
+    "@initencounter/vits": "^0.0.3",
+    "@koishijs/plugin-proxy-agent": "^0.3.3"
   },
   "koishi": {
     "browser": true,
