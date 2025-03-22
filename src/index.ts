@@ -6,24 +6,26 @@ class Main extends Service implements Vits {
   static inject = {
     required: ['http']
   }
-  #http: HTTP
+  private http?: HTTP
 
   constructor(ctx: Context, public config: Main.Config) {
     super(ctx, 'vits', true)
-    this.#http = config.proxy_agent ? ctx.http.extend({ proxyAgent: config.proxy_agent }) : ctx.http
+    if (config.proxy_agent) {
+      this.http = ctx.http.extend({ proxyAgent: config.proxy_agent })
+    }
     for (const x of config.command) {
       ctx.command(`${x.name} <content:text>`, x.description)
         .action(async (_, content) => {
           if (!content) return '内容未输入。'
           if (/<.*\/>/gm.test(content)) return '输入的内容不是纯文本。'
-          return await generate(this.#http, content, x, config.api_key)
+          return await generate(this.http ?? ctx.http, content, x, config.api_key)
         })
     }
   }
 
   async say(options: Vits.Result): Promise<h> {
     const { vits_service_speaker, api_key } = this.config
-    return await generate(this.#http, options.input, { reference_id: vits_service_speaker }, api_key)
+    return await generate(this.http ?? this.ctx.http, options.input, { reference_id: vits_service_speaker }, api_key)
   }
 }
 
