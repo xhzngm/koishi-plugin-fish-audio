@@ -31,8 +31,16 @@ var Main = class extends import_koishi.Service {
     if (config.proxy_agent) {
       this.http = ctx.http.extend({ proxyAgent: config.proxy_agent });
     }
+    
     for (const x of config.command) {
-      ctx.command(`${x.name} <content:text>`, x.description).action(async (_, content) => {
+      let command;
+      if (config.command_name && config.command_name.trim() !== '') {
+        command = ctx.command(`${config.command_name}.${x.name} <content:text>`, x.description);
+      } else {
+        command = ctx.command(`${x.name} <content:text>`, x.description);
+      }
+      
+      command.action(async (_, content) => {
         if (!content) return "内容未输入。";
         if (/<.*\/>/gm.test(content)) return "输入的内容不是纯文本。";
         return await generate(this.http ?? ctx.http, content, x, config.api_key, config.api_url);
@@ -48,7 +56,8 @@ var Main = class extends import_koishi.Service {
   http;
   async say(options) {
     const { vits_service_speaker, api_key, api_url } = this.config;
-    return await generate(this.http ?? this.ctx.http, options.input, { reference_id: vits_service_speaker }, api_key, api_url);
+    const command = this.config.command.find(c => c.reference_id === vits_service_speaker) || this.config.command[0];
+    return await generate(this.http ?? this.ctx.http, options.input, command, api_key, api_url);
   }
 };
 async function generate(http, input, x, key, api_url) {
@@ -79,17 +88,20 @@ __name(generate, "generate");
   Main2.Config = import_koishi.Schema.object({
     api_key: import_koishi.Schema.string().description("Fish Audio [API 令牌密钥](https://fish.audio/zh-CN/go-api/)").required(),
     api_url: import_koishi.Schema.string().description("Fish Audio API 地址").default("https://api.fish.audio/v1/tts"),
+    command_name: import_koishi.Schema.string().description("指令名称").default(""),
     command: import_koishi.Schema.array(
       import_koishi.Schema.object({
         name: import_koishi.Schema.string().description("指令名").required(),
         description: import_koishi.Schema.string().description("指令的描述").default(""),
         reference_id: import_koishi.Schema.string().description("Fish Audio 参考标识，可从 Fish Audio 模型主页链接中取得，如 https://fish.audio/zh-CN/m/bcbb6d60721c44a489bc33dd59ce7cfc").required()
       })
-    ).description("指令列表").default([{
-      name: "say",
-      description: "语音生成（流萤）",
-      reference_id: "bcbb6d60721c44a489bc33dd59ce7cfc"
-    }]),
+    ).description("指令列表").default([
+      {
+        name: "say",
+        description: "语音生成（流萤）",
+        reference_id: "bcbb6d60721c44a489bc33dd59ce7cfc"
+      }
+    ]),
     vits_service_speaker: import_koishi.Schema.string().description("用于 VITS 服务的 Fish Audio 参考标识").default("bcbb6d60721c44a489bc33dd59ce7cfc"),
     proxy_agent: import_koishi.Schema.string().role("link").description("用于获取语音的代理。")
   });
